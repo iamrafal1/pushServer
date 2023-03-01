@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>SSE with timestamps</title>
+</head>
+<body>
+
+	Hello {{.}} this is Otz, or at least a convincing series of timestamps:<br>
+
+	<script type="text/javascript">
+
+	    // Create a Javascript EventSource
+	    var source = new EventSource('/events/');
+
+	    // Create a callback for when a new message is received.
+	    source.onmessage = function(e) {
+
+	        // Append the data attribute of the message to the DOM.
+	        document.body.innerHTML += e.data + '<br>';
+	    };
+	</script>
+</body>
+</html>
