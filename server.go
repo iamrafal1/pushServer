@@ -1,7 +1,8 @@
 package main
 
 import (
-	"fmt"
+	"bytes"
+	"encoding/json"
 	"log"
 	"net/http"
 	"text/template"
@@ -37,17 +38,24 @@ func main() {
 	}
 	go distributor.listen()
 	http.Handle("/events/", distributor)
-
+	http.HandleFunc("/top/", webhookHandler(distributor))
 	go func() {
 		for i := 0; ; i++ {
-
-			// Create a message for clients
-			distributor.messages <- fmt.Sprintf("%d - the time is %v", i, time.Now())
-
+			time.Sleep(5e9)
+			//Encode the data
+			postBody, _ := json.Marshal(map[string]string{
+				"name":  "Hello",
+				"email": "Friends@otz.com",
+			})
+			responseBody := bytes.NewBuffer(postBody)
+			//Leverage Go's HTTP Post function to make request
+			_, err := http.Post("http://127.0.0.1:8080/top/", "application/json", responseBody)
+			if err != nil {
+				log.Printf("Something really bad happened")
+				log.Printf(err.Error())
+			}
 			// Print log message and sleep for 5 seconds.
 			log.Printf("Sent message %d ", i)
-			time.Sleep(5e9)
-
 		}
 	}()
 	http.HandleFunc("/", handler)
