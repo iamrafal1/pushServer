@@ -1,13 +1,11 @@
 package main
 
 import (
-	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 	"text/template"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/iamrafal1/pushServer/db"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -34,28 +32,9 @@ func main() {
 		clients:        make(map[MessageChan]bool),
 	}
 	go distributor.listen()
-	go dbTest()
+	go db.DbCheck()
 	http.Handle("/events/", distributor)
 	http.HandleFunc("/top/", webhookHandler(distributor))
 	http.HandleFunc("/", handler)
 	log.Fatal(http.ListenAndServe(":8080", nil))
-}
-
-func dbTest() {
-	db, err := sql.Open("sqlite3", ":memory:")
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer db.Close()
-
-	var version string
-	err = db.QueryRow("SELECT SQLITE_VERSION()").Scan(&version)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println(version)
 }
