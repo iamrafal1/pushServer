@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"text/template"
@@ -32,7 +33,12 @@ func main() {
 		clients:        make(map[MessageChan]bool),
 	}
 	go distributor.listen()
-	go db.DbCheck()
+	data, err := db.NewDatabase()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer data.Close()
+	fmt.Println(data.GetAllUrls())
 	http.Handle("/events/", distributor)
 	http.HandleFunc("/top/", webhookHandler(distributor))
 	http.HandleFunc("/", handler)
