@@ -18,7 +18,7 @@ const create string = `
   );
   `
 
-func NewDatabase() (*database, error) {
+func NewDatabase() (*Database, error) {
 
 	// Create connection
 	db, err := sql.Open("sqlite3", file)
@@ -31,19 +31,19 @@ func NewDatabase() (*database, error) {
 		return nil, err
 	}
 
-	return &database{
+	return &Database{
 		db: db,
 	}, nil
 }
 
 // database struct so we can implement mutual exclusion
-type database struct {
+type Database struct {
 	db *sql.DB
 	mu sync.Mutex
 }
 
 // Helper function to avoid repetition
-func (data *database) executeQuery(query string, key string, url string, token string) (sql.Result, error) {
+func (data *Database) executeQuery(query string, key string, url string, token string) (sql.Result, error) {
 
 	// Validate parameters
 	if key == "" || url == "" || token == "" {
@@ -62,7 +62,7 @@ func (data *database) executeQuery(query string, key string, url string, token s
 }
 
 // Inserts data into table
-func (data *database) InsertAllCols(key string, url string, token string) (sql.Result, error) {
+func (data *Database) InsertAllCols(key string, url string, token string) (sql.Result, error) {
 
 	// Prepare query
 	query := `INSERT INTO infrastructures VALUES (?,?,?);`
@@ -74,7 +74,7 @@ func (data *database) InsertAllCols(key string, url string, token string) (sql.R
 }
 
 // Deletes row from table. Requires all data for security reasons
-func (data *database) DeleteRow(key string, url string, token string) (sql.Result, error) {
+func (data *Database) DeleteRow(key string, url string, token string) (sql.Result, error) {
 
 	// Prepare query
 	query := `DELETE FROM infrastructures WHERE key = ? AND url = ? AND token = ?;`
@@ -86,7 +86,7 @@ func (data *database) DeleteRow(key string, url string, token string) (sql.Resul
 }
 
 // Returns row from table given key
-func (data *database) GetRow(key string) (string, string, error) {
+func (data *Database) GetRow(key string) (string, string, error) {
 
 	// Prepare query
 	query := `SELECT url, token FROM infrastructures WHERE key = ?;`
@@ -106,7 +106,7 @@ func (data *database) GetRow(key string) (string, string, error) {
 }
 
 // Return all urls
-func (data *database) GetAllUrls() ([]string, error) {
+func (data *Database) GetAllUrls() ([]string, error) {
 
 	// Prepare query
 	query := `SELECT url FROM infrastructures;`
@@ -131,7 +131,8 @@ func (data *database) GetAllUrls() ([]string, error) {
 	return urls, nil
 }
 
-func (data *database) Close() error {
+// Close connection to database
+func (data *Database) Close() error {
 	err := data.db.Close()
 	if err != nil {
 		return err

@@ -40,7 +40,7 @@ func main() {
 	defer data.Close()
 	fmt.Println(data.GetAllUrls())
 	http.Handle("/events/", distributor)
-	http.HandleFunc("/top/", webhookHandler(distributor))
+	http.HandleFunc("/top/", WebhookHandler(distributor, data))
 	http.HandleFunc("/", handler)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

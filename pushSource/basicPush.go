@@ -15,9 +15,15 @@ func main() {
 			"time": time.Now().String(),
 		})
 		responseBody := bytes.NewBuffer(postBody)
+		req, err := http.NewRequest("POST", "http://127.0.0.1:8080/top/", responseBody)
+		if err != nil {
+			log.Print("Failed to create request")
+		}
+		req.Header.Add("Push-Key", "1")
+		req.Header.Add("Push-Token", "3")
 
 		// Post request to server
-		_, err := http.Post("http://127.0.0.1:8080/top/", "application/json", responseBody)
+		_, err = http.DefaultClient.Do(req)
 		if err != nil {
 			log.Print(err.Error())
 		}

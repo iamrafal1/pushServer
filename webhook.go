@@ -5,22 +5,66 @@ import (
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/iamrafal1/pushServer/db"
 )
 
-func webhookHandler(dist *Distributor) func(http.ResponseWriter, *http.Request) {
+// Wrapper for handler function that requires a database and a distributor
+func WebhookHandler(dist *Distributor, data *db.Database) func(http.ResponseWriter, *http.Request) {
 	if dist == nil {
-		panic("nil Distributor session!")
+		log.Fatal("ERROR nil Distributor session!")
 	}
+	if data == nil {
+		log.Fatal("ERROR nil Database session!")
+	}
+
+	// Handler for incoming webhooks
 	return func(w http.ResponseWriter, r *http.Request) {
-		data, err := io.ReadAll(r.Body)
-		strData := string(data)
+
+		// Validate key and token
+		url := requestValidator(r, data)
+		if url == "" {
+			log.Print("Validation failed")
+			return
+		}
+		log.Print(url + "    HERE")
+		message, err := io.ReadAll(r.Body)
+		strData := string(message)
 		if err != nil {
 			log.Fatal("error reading body")
 		}
 		if strData != "" {
 			dist.messages <- fmt.Sprint(strData)
 		}
+
 		// Done.
 		log.Println("Finished HTTP request at", r.URL.Path)
 	}
+}
+
+// Helper function for validating a request and determining correct distributor
+func requestValidator(r *http.Request, d *db.Database) string {
+	// Get info from request header
+	key := r.Header.Get("Push-Key")
+	if key == "" {
+		return ""
+	}
+	reqToken := r.Header.Get("Push-Token")
+	if reqToken == "" {
+		return ""
+	}
+
+	// retrieve data from db and compare with header info
+	url, actualToken, err := d.GetRow(key)
+	if err != nil {
+		log.Print("Db Error")
+		return ""
+	}
+	if actualToken != reqToken {
+		log.Print("Authentication Failed")
+		return ""
+	}
+
+	return url
+
 }
