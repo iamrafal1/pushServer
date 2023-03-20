@@ -9,6 +9,42 @@ import (
 	"github.com/iamrafal1/pushServer/db"
 )
 
+func main() {
+
+	data, err := db.NewDatabase()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer data.Close()
+	distributorMap := initialiseDistributors(data)
+	fmt.Println(distributorMap)
+	http.HandleFunc("/top/", WebhookHandler(distributorMap, data))
+	http.HandleFunc("/", handler)
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+func initialiseDistributors(d *db.Database) map[string]*Distributor {
+
+	// Get urls from database
+	urls, err := d.GetAllUrls()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create url - dist map
+	urlMap := make(map[string]*Distributor)
+
+	// Iterate through distributors and initialise them
+	for _, url := range urls {
+		dist := newDistributor()
+		log.Print(url)
+		http.Handle("/"+url, dist)
+		urlMap[url] = dist
+	}
+
+	return urlMap
+}
+
 func handler(w http.ResponseWriter, r *http.Request) {
 
 	// Read in the template with SSE JavaScript code.
@@ -23,20 +59,4 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	// Done.
 	log.Println("Finished HTTP request at", r.URL.Path)
-}
-
-func main() {
-	// distributors := make(map[string]*Distributor)
-	distributor := newDistributor("/events/")
-	go distributor.listen()
-	data, err := db.NewDatabase()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer data.Close()
-	fmt.Println(data.GetAllUrls())
-	http.Handle(distributor.url, distributor)
-	http.HandleFunc("/top/", WebhookHandler(distributor, data))
-	http.HandleFunc("/", handler)
-	log.Fatal(http.ListenAndServe(":8080", nil))
 }

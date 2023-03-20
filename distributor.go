@@ -6,14 +6,14 @@ import (
 	"net/http"
 )
 
-func newDistributor(url string) *Distributor {
+func newDistributor() *Distributor {
 	dist := &Distributor{
-		url:            url,
 		messages:       make(chan string),
 		newClients:     make(chan connection),
 		closingClients: make(chan connection),
 		clients:        make(map[connection]bool),
 	}
+	go dist.listen()
 	return dist
 }
 
