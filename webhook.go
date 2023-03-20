@@ -10,8 +10,8 @@ import (
 )
 
 // Wrapper for handler function that requires a database and a distributor
-func WebhookHandler(dist *Distributor, data *db.Database) func(http.ResponseWriter, *http.Request) {
-	if dist == nil {
+func WebhookHandler(dists map[string]*Distributor, data *db.Database) func(http.ResponseWriter, *http.Request) {
+	if dists == nil {
 		log.Fatal("ERROR nil Distributor session!")
 	}
 	if data == nil {
@@ -27,15 +27,17 @@ func WebhookHandler(dist *Distributor, data *db.Database) func(http.ResponseWrit
 			log.Print("Validation failed")
 			return
 		}
-		log.Print(url + "    HERE")
+
+		// Read message body
 		message, err := io.ReadAll(r.Body)
-		strData := string(message)
 		if err != nil {
 			log.Fatal("error reading body")
 		}
-		if strData != "" {
-			dist.messages <- fmt.Sprint(strData)
+		strData := string(message)
+		if strData == "" {
+			log.Fatal("body empty")
 		}
+		dists[url].messages <- fmt.Sprint(strData)
 
 		// Done.
 		log.Println("Finished HTTP request at", r.URL.Path)
@@ -44,6 +46,7 @@ func WebhookHandler(dist *Distributor, data *db.Database) func(http.ResponseWrit
 
 // Helper function for validating a request and determining correct distributor
 func requestValidator(r *http.Request, d *db.Database) string {
+
 	// Get info from request header
 	key := r.Header.Get("Push-Key")
 	if key == "" {
