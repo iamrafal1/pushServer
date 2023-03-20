@@ -6,40 +6,47 @@ import (
 	"net/http"
 )
 
-type MessageChan chan []byte
+func newDistributor(url string) *Distributor {
+	dist := &Distributor{
+		url:            url,
+		messages:       make(chan string),
+		newClients:     make(chan connection),
+		closingClients: make(chan connection),
+		clients:        make(map[connection]bool),
+	}
+	return dist
+}
 
-// A distributor holds open client connections,
-// listens for incoming events on its messages channel
-// and broadcast event data to all registered connections
+// NOTE (chan string) is essentially like a connection - it's a way to communicate with the go routine that holds the connection. Hence each "connection" below refers to a chan string, but this only applies in relation to clients. Note that messages is not a "connection" despite being the same data type, because logically it's different.
+type connection chan string
+
+// Observer-like data structure
 type Distributor struct {
-	messages       chan string          // Channel with messages
-	newClients     chan MessageChan     // New client connections
-	closingClients chan MessageChan     // Closed client connections
-	clients        map[MessageChan]bool // Client connection map
+	url            string              // Url to connect to distributor
+	messages       chan string         // Channel for messages from the outside
+	newClients     chan connection     // Channel for new client connections
+	closingClients chan connection     // Channel for closed client connections
+	clients        map[connection]bool // Client connection map
 }
 
 // Listen on various channels. This must run in a go routine
 func (d *Distributor) listen() {
 	for {
 		select {
-		case s := <-d.newClients:
-
-			// New client connected, add them to client map
-			d.clients[s] = true
-			log.Printf("Client added. %d registered clients", len(d.clients))
-		case s := <-d.closingClients:
-
-			// Client disconnected, stop sending them messages.
-			delete(d.clients, s)
-			log.Printf("Removed client. %d registered clients", len(d.clients))
+		// New message detected, broadcast message to all clients
 		case messages := <-d.messages:
-
-			// New message detected, broadcase message to all clients
-			byte_array := []byte(messages)
 			for s := range d.clients {
-				s <- byte_array
+				s <- messages
 			}
 			log.Printf("Broadcast message to %d clients", len(d.clients))
+		// New client connected, add them to client map
+		case conn := <-d.newClients:
+			d.clients[conn] = true
+			log.Printf("Client added. %d registered clients", len(d.clients))
+		// Client disconnected, remove them from the client map
+		case conn := <-d.closingClients:
+			delete(d.clients, conn)
+			log.Printf("Removed client. %d registered clients", len(d.clients))
 		}
 	}
 
@@ -48,10 +55,9 @@ func (d *Distributor) listen() {
 // http handler interface. Each individual connection is handled here
 func (d *Distributor) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
+	// Get request context and create a flusher
 	ctx := req.Context()
-
 	flusher, ok := rw.(http.Flusher)
-
 	if !ok {
 		http.Error(rw, "Flushing impossible!", http.StatusInternalServerError)
 		return
@@ -63,30 +69,23 @@ func (d *Distributor) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	rw.Header().Set("Connection", "keep-alive")
 	rw.Header().Set("Access-Control-Allow-Origin", "*")
 
-	// Each connection creates its own message channel
-	messageChan := make(MessageChan)
+	// Each SSE connection creates its own communication connection
+	communicationConn := make(connection)
 
 	// Notify distributor that new client is created
-	d.newClients <- messageChan
+	d.newClients <- communicationConn
 
-	// Remove this client from client map when this handler exits.
-	defer func() {
-		d.closingClients <- messageChan
-	}()
-
-	// Listen to connection close and un-register messageChan
+	// Listen to connection close and un-register connection
 	notify := ctx.Done()
-
 	go func() {
 		<-notify
-		d.closingClients <- messageChan
+		d.closingClients <- communicationConn
 	}()
 
-	// block waiting or messages broadcast on this connection's messageChan
+	// Loop infinitely, flush messages as they arrive
 	for {
-		// Write to the ResponseWriter
-		fmt.Fprintf(rw, "data: %s\n\n", <-messageChan)
-		// Flush the data immediately instead of buffering it for later.
+		// Write to the ResponseWriter and flush
+		fmt.Fprintf(rw, "data: %s\n\n", <-communicationConn)
 		flusher.Flush()
 	}
 }

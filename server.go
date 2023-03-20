@@ -26,12 +26,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	distributor := &Distributor{
-		messages:       make(chan string),
-		newClients:     make(chan MessageChan),
-		closingClients: make(chan MessageChan),
-		clients:        make(map[MessageChan]bool),
-	}
+	// distributors := make(map[string]*Distributor)
+	distributor := newDistributor("/events/")
 	go distributor.listen()
 	data, err := db.NewDatabase()
 	if err != nil {
@@ -39,7 +35,7 @@ func main() {
 	}
 	defer data.Close()
 	fmt.Println(data.GetAllUrls())
-	http.Handle("/events/", distributor)
+	http.Handle(distributor.url, distributor)
 	http.HandleFunc("/top/", WebhookHandler(distributor, data))
 	http.HandleFunc("/", handler)
 	log.Fatal(http.ListenAndServe(":8080", nil))
