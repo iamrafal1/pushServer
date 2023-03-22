@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func newDistributor() *Distributor {
+func NewDistributor() *Distributor {
 	dist := &Distributor{
 		messages:       make(chan string),
 		newClients:     make(chan connection),
