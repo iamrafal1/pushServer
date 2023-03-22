@@ -22,7 +22,7 @@ func WebhookHandler(dists map[string]*Distributor, data *db.Database) func(http.
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// Validate key and token
-		url := requestValidator(r, data)
+		url := RequestValidator(r, data)
 		if url == "" {
 			log.Print("Validation failed")
 			return
@@ -45,7 +45,7 @@ func WebhookHandler(dists map[string]*Distributor, data *db.Database) func(http.
 }
 
 // Helper function for validating a request and determining correct distributor
-func requestValidator(r *http.Request, d *db.Database) string {
+func RequestValidator(r *http.Request, d *db.Database) string {
 
 	// Get info from request header
 	key := r.Header.Get("Push-Key")
