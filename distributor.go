@@ -22,7 +22,6 @@ type connection chan string
 
 // Observer-like data structure
 type Distributor struct {
-	url            string              // Url to connect to distributor
 	messages       chan string         // Channel for messages from the outside
 	newClients     chan connection     // Channel for new client connections
 	closingClients chan connection     // Channel for closed client connections

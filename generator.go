@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"math/big"
 	"time"
 )
@@ -21,6 +22,8 @@ func hashGenerator() string {
 	// Create hash
 	h := sha256.New()
 	h.Write([]byte(fullString))
-	hashString := h.Sum(nil)
+
+	hashBytes := h.Sum(nil)
+	hashString := hex.EncodeToString(hashBytes)
 	return string(hashString)
 }

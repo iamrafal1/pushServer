@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>My Webpage</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        div {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-input {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Welcome to the Push Notification Server</h1>
+        <p>Click the button below to create a new Push Infrastructure</p>
+        <button id="create-button" onclick="createInformation()">Create</button>
+        <div id="extra-info">
+            <!-- Will contain key, url and token -->
+        </div>
+        <script>
+            function createInformation() {
+                // Make an HTTP GET request to the Go server
+                fetch('/generate').then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    // Handle the response from the Go server
+                    response.text().then(data => {
+                        const object = JSON.parse(data);
+
+                        const divElement = document.getElementById("extra-info");
+                        const textNode1 = document.createTextNode("Key: " + object.key);
+                        const textNode2 = document.createTextNode("Url: " + object.url);
+                        const textNode3 = document.createTextNode("Token: " + object.token);
+                        const p1 = document.createElement("p");
+                        const p2 = document.createElement("p");
+                        const p3 = document.createElement("p");
+                        p1.appendChild(textNode1);
+                        p2.appendChild(textNode2);
+                        p3.appendChild(textNode3);
+                        divElement.appendChild(p1);
+                        divElement.appendChild(p2);
+                        divElement.appendChild(p3);
+                    });
+                }).catch(error => {
+                    console.error('Error calling Go function:', error);
+                });
+                const createButton = document.getElementById("create-button")
+                createButton.disabled = true;
+                createButton.style.backgroundColor = "gray"
+            }
+        </script>
+        <p>Use the form below to remove an infrastructure by providing a key and a token</p>
+        <form id="my-form">
+            <label class="form-label" for="key">Key:</label>
+            <input class="form-input" type="text" id="key" name="key" required>
+            <label class="form-label" for="token">Token:</label>
+            <input class="form-input" type="token" id="token" name="token" required>
+            <button class="delete-button" type="button" onclick="submitData()">Remove Infrastructure</button>
+        </form>
+        <script>
+            function submitData() {
+                const form = document.getElementById('my-form');
+                console.log(form.key.value + " AND " + form.token.value)
+                fetch('/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Push-Key': form.key.value,
+                        'Push-Token': form.token.value
+                    },
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        response.text().then(function (text) {
+                            const resultDiv = document.getElementById('result-message');
+                            resultDiv.textContent = text;
+                        });
+                    })
+            };
+        </script>
+        <div id="result-message">
+            <!--Result of deletion-->
+        </div>
+    </div>
+</body>
+
+</html>
