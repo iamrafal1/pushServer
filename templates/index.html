@@ -89,13 +89,12 @@
             <label class="form-label" for="key">Key:</label>
             <input class="form-input" type="text" id="key" name="key" required>
             <label class="form-label" for="token">Token:</label>
-            <input class="form-input" type="token" id="token" name="token" required>
+            <input class="form-input" type="text" id="token" name="token" required>
             <button class="delete-button" type="button" onclick="submitData()">Remove Infrastructure</button>
         </form>
         <script>
             function submitData() {
                 const form = document.getElementById('my-form');
-                console.log(form.key.value + " AND " + form.token.value)
                 fetch('/delete', {
                     method: 'POST',
                     headers: {
