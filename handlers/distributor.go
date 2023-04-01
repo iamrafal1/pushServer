@@ -6,17 +6,6 @@ import (
 	"net/http"
 )
 
-func NewDistributor() *Distributor {
-	dist := &Distributor{
-		messages:       make(chan string),
-		newClients:     make(chan connection),
-		closingClients: make(chan connection),
-		clients:        make(map[connection]bool),
-	}
-	go dist.listen()
-	return dist
-}
-
 // NOTE (chan string) is essentially like a connection - it's a way to communicate with the go routine that holds the connection. Hence each "connection" below refers to a chan string, but this only applies in relation to clients. Note that messages is not a "connection" despite being the same data type, because logically it's different.
 type connection chan string
 
@@ -26,6 +15,17 @@ type Distributor struct {
 	newClients     chan connection     // Channel for new client connections
 	closingClients chan connection     // Channel for closed client connections
 	clients        map[connection]bool // Client connection map
+}
+
+func NewDistributor() *Distributor {
+	dist := &Distributor{
+		messages:       make(chan string),
+		newClients:     make(chan connection),
+		closingClients: make(chan connection),
+		clients:        make(map[connection]bool),
+	}
+	go dist.listen()
+	return dist
 }
 
 // Listen on various channels. This must run in a go routine
