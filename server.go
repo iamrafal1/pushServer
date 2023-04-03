@@ -22,7 +22,7 @@ func main() {
 	http.HandleFunc("/generate", h.GenerationHandler(distributorMap, data))
 	http.HandleFunc("/delete", h.DeletionHandler(distributorMap, data))
 	http.HandleFunc("/", h.MainHandler)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe("localhost:8080", nil))
 }
 
 func initialiseDistributors(d *db.Database) map[string]*h.Distributor {
