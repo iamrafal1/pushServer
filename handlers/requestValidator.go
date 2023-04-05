@@ -11,7 +11,9 @@ import (
 func RequestValidator(r *http.Request, d *db.Database) string {
 
 	// Get info from request header
+
 	key := r.Header.Get("Push-Key")
+	log.Print(key)
 	if key == "" {
 		return ""
 	}
@@ -19,6 +21,7 @@ func RequestValidator(r *http.Request, d *db.Database) string {
 	if reqToken == "" {
 		return ""
 	}
+	log.Print(key, reqToken)
 
 	// retrieve data from db and compare with header info
 	url, actualToken, err := d.GetRow(key)
@@ -33,4 +36,10 @@ func RequestValidator(r *http.Request, d *db.Database) string {
 
 	return url
 
+}
+
+func EnableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "https://cs1.ucc.ie")
+	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, Push-Key, Push-Token")
 }

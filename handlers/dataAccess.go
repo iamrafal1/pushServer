@@ -44,7 +44,7 @@ func GenerationHandler(dists map[string]*Distributor, data *db.Database) func(ht
 			// Else, write as json as a response and create distributor
 			dist := NewDistributor()
 			dists[url] = dist
-			fmt.Fprintf(w, `{"key": "%s", "url": "127.0.0.1:8080/%s", "token":"%s"}`, key, url, token)
+			fmt.Fprintf(w, `{"key": "%s", "url": "https://a35d-143-239-9-3.eu.ngrok.io/%s", "token":"%s"}`, key, url, token)
 			break
 		}
 

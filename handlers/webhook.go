@@ -20,26 +20,33 @@ func WebhookHandler(dists map[string]*Distributor, data *db.Database) func(http.
 
 	// Handler for incoming webhooks
 	return func(w http.ResponseWriter, r *http.Request) {
-
+		EnableCors(&w)
 		// Validate key and token
 		url := RequestValidator(r, data)
 		if url == "" {
 			log.Print("Validation failed")
+			w.Write([]byte("Validation failed"))
 			return
 		}
 
 		// Read message body
 		message, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.Fatal("error reading body")
+			log.Print("error reading body")
+			w.Write([]byte("Validation failed"))
+			return
 		}
 		strData := string(message)
+		log.Print(strData)
 		if strData == "" {
-			log.Fatal("body empty")
+			log.Print("body empty")
+			w.Write([]byte("No message entered"))
+			return
 		}
 		dists[url].messages <- fmt.Sprint(strData)
 
 		// Done.
 		log.Println("Finished HTTP request at", r.URL.Path)
+		w.Write([]byte("Success"))
 	}
 }

@@ -46,3 +46,7 @@ func initialiseDistributors(d *db.Database) map[string]*h.Distributor {
 
 	return urlMap
 }
+
+// func NewEndpoint(*h.Distributor){
+
+// }
