@@ -17,6 +17,7 @@ type Distributor struct {
 	clients        map[connection]bool // Client connection map
 }
 
+// Creates new distributor instances and makes them listen in a go routine
 func NewDistributor() *Distributor {
 	dist := &Distributor{
 		messages:       make(chan string),
@@ -52,21 +53,21 @@ func (d *Distributor) listen() {
 }
 
 // http handler interface. Each individual connection is handled here
-func (d *Distributor) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+func (d *Distributor) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// Get request context and create a flusher
 	ctx := req.Context()
-	flusher, ok := rw.(http.Flusher)
+	flusher, ok := w.(http.Flusher)
 	if !ok {
-		http.Error(rw, "Flushing impossible!", http.StatusInternalServerError)
+		http.Error(w, "Flushing impossible!", http.StatusInternalServerError)
 		return
 	}
 
 	// Set event streaming headers.
-	rw.Header().Set("Content-Type", "text/event-stream")
-	rw.Header().Set("Cache-Control", "no-cache")
-	rw.Header().Set("Connection", "keep-alive")
-	rw.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	// Each SSE connection creates its own communication connection
 	communicationConn := make(connection)
@@ -84,7 +85,7 @@ func (d *Distributor) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	// Loop infinitely, flush messages as they arrive
 	for {
 		// Write to the ResponseWriter and flush
-		fmt.Fprintf(rw, "data: %s\n\n", <-communicationConn)
+		fmt.Fprintf(w, "data: %s\n\n", <-communicationConn)
 		flusher.Flush()
 	}
 }

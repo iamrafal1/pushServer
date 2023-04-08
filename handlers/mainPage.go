@@ -6,16 +6,17 @@ import (
 	"net/http"
 )
 
+// Handles main page of server
 func MainHandler(w http.ResponseWriter, r *http.Request) {
 
-	// Read in the template with SSE JavaScript code.
+	// Read in the template with main webpage
 	t, err := template.ParseFiles("templates/index.html")
 	if err != nil {
 		log.Fatal("error parsing template.")
 
 	}
 
-	// Render the template, writing to `w`.
+	// Render the template
 	t.Execute(w, nil)
 
 	// Done.

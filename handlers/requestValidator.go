@@ -38,6 +38,7 @@ func RequestValidator(r *http.Request, d *db.Database) string {
 
 }
 
+// Helper function to deal with CORS. Currently only set to run on cs1
 func EnableCors(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "https://cs1.ucc.ie")
 	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")

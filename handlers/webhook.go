@@ -43,6 +43,8 @@ func WebhookHandler(dists map[string]*Distributor, data *db.Database) func(http.
 			w.Write([]byte("No message entered"))
 			return
 		}
+
+		// Write to the appropriate distributors message channel
 		dists[url].messages <- fmt.Sprint(strData)
 
 		// Done.

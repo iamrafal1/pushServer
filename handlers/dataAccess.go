@@ -13,6 +13,7 @@ import (
 	"github.com/iamrafal1/pushServer/db"
 )
 
+// Wrapper for handler that generates new infrastructures
 func GenerationHandler(dists map[string]*Distributor, data *db.Database) func(http.ResponseWriter, *http.Request) {
 	if dists == nil {
 		log.Fatal("ERROR nil Distributor session!")
@@ -21,7 +22,7 @@ func GenerationHandler(dists map[string]*Distributor, data *db.Database) func(ht
 		log.Fatal("ERROR nil Database session!")
 	}
 
-	// Handler for incoming webhooks
+	// Handler for generating new infrastructures
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		for {
@@ -40,11 +41,12 @@ func GenerationHandler(dists map[string]*Distributor, data *db.Database) func(ht
 				continue
 			}
 
-			// TODO: change localhost to some url
-			// Else, write as json as a response and create distributor
+			// Create distributor
 			dist := NewDistributor()
 			dists[url] = dist
-			fmt.Fprintf(w, `{"key": "%s", "url": "https://a35d-143-239-9-3.eu.ngrok.io/%s", "token":"%s"}`, key, url, token)
+
+			// Return information about newly generated information
+			fmt.Fprintf(w, `{"key": "%s", "url": "https://127.0.0.1:8080/sub/%s", "token":"%s"}`, key, url, token)
 			break
 		}
 
@@ -53,6 +55,7 @@ func GenerationHandler(dists map[string]*Distributor, data *db.Database) func(ht
 	}
 }
 
+// Wrapper for handling deletions of infrastructure
 func DeletionHandler(dists map[string]*Distributor, data *db.Database) func(http.ResponseWriter, *http.Request) {
 	if dists == nil {
 		log.Fatal("ERROR nil Distributor session!")
@@ -61,8 +64,9 @@ func DeletionHandler(dists map[string]*Distributor, data *db.Database) func(http
 		log.Fatal("ERROR nil Database session!")
 	}
 
-	// Handler for incoming webhooks
+	// Handler for deleting infrastructures
 	return func(w http.ResponseWriter, r *http.Request) {
+
 		// Validate key and token
 		url := RequestValidator(r, data)
 		if url == "" {
@@ -74,6 +78,7 @@ func DeletionHandler(dists map[string]*Distributor, data *db.Database) func(http
 		key := r.Header.Get("Push-Key")
 		token := r.Header.Get("Push-Token")
 
+		// Remove from database
 		_, err := data.DeleteRow(key, url, token)
 		if err != nil {
 			log.Print("Failed deletion")
@@ -82,6 +87,7 @@ func DeletionHandler(dists map[string]*Distributor, data *db.Database) func(http
 		}
 		delete(dists, url)
 
+		// Return success message
 		w.Write([]byte("Success"))
 
 		// Done.
@@ -89,6 +95,7 @@ func DeletionHandler(dists map[string]*Distributor, data *db.Database) func(http
 	}
 }
 
+// Helper function to generate hashes
 func hashGenerator() string {
 	// Create random number that is cryptographically safe
 	randomNumber, _ := rand.Int(rand.Reader, big.NewInt(100000))
