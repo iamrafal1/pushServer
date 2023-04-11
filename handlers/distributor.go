@@ -6,30 +6,23 @@ import (
 	"net/http"
 )
 
-// NOTE (chan string) is essentially like a connection - it's a way to communicate with the go routine that holds the connection. Hence each "connection" below refers to a chan string, but this only applies in relation to clients. Note that messages is not a "connection" despite being the same data type, because logically it's different.
-type connection chan string
-
 // Observer-like data structure
 type Distributor struct {
-	messages       chan string         // Channel for messages from the outside
-	newClients     chan connection     // Channel for new client connections
-	closingClients chan connection     // Channel for closed client connections
-	clients        map[connection]bool // Client connection map
+	messages chan string          // Channel for messages from the outside
+	clients  map[chan string]bool // Client connection map
 }
 
 // Creates new distributor instances and makes them listen in a go routine
 func NewDistributor() *Distributor {
 	dist := &Distributor{
-		messages:       make(chan string),
-		newClients:     make(chan connection),
-		closingClients: make(chan connection),
-		clients:        make(map[connection]bool),
+		messages: make(chan string),
+		clients:  make(map[chan string]bool),
 	}
 	go dist.listen()
 	return dist
 }
 
-// Listen on various channels. This must run in a go routine
+// Listen for new message update. This must run in a go routine
 func (d *Distributor) listen() {
 	for {
 		select {
@@ -39,14 +32,6 @@ func (d *Distributor) listen() {
 				s <- messages
 			}
 			log.Printf("Broadcast message to %d clients", len(d.clients))
-		// New client connected, add them to client map
-		case conn := <-d.newClients:
-			d.clients[conn] = true
-			log.Printf("Client added. %d registered clients", len(d.clients))
-		// Client disconnected, remove them from the client map
-		case conn := <-d.closingClients:
-			delete(d.clients, conn)
-			log.Printf("Removed client. %d registered clients", len(d.clients))
 		}
 	}
 
@@ -69,23 +54,25 @@ func (d *Distributor) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	// Each SSE connection creates its own communication connection
-	communicationConn := make(connection)
+	// Each SSE connection creates its own connection
+	conn := make(chan string)
 
-	// Notify distributor that new client is created
-	d.newClients <- communicationConn
+	// Add new client to client map
+	d.clients[conn] = true
+	log.Printf("Client added. %d registered clients", len(d.clients))
 
 	// Listen to connection close and un-register connection
 	notify := ctx.Done()
 	go func() {
 		<-notify
-		d.closingClients <- communicationConn
+		delete(d.clients, conn)
+		log.Printf("Removed client. %d registered clients", len(d.clients))
 	}()
 
 	// Loop infinitely, flush messages as they arrive
 	for {
 		// Write to the ResponseWriter and flush
-		fmt.Fprintf(w, "data: %s\n\n", <-communicationConn)
+		fmt.Fprintf(w, "data: %s\n\n", <-conn)
 		flusher.Flush()
 	}
 }

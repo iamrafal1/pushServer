@@ -37,7 +37,6 @@ func WebhookHandler(dists map[string]*Distributor, data *db.Database) func(http.
 			return
 		}
 		strData := string(message)
-		log.Print(strData)
 		if strData == "" {
 			log.Print("body empty")
 			w.Write([]byte("No message entered"))
