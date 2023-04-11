@@ -13,7 +13,6 @@ func RequestValidator(r *http.Request, d *db.Database) string {
 	// Get info from request header
 
 	key := r.Header.Get("Push-Key")
-	log.Print(key)
 	if key == "" {
 		return ""
 	}
@@ -21,7 +20,6 @@ func RequestValidator(r *http.Request, d *db.Database) string {
 	if reqToken == "" {
 		return ""
 	}
-	log.Print(key, reqToken)
 
 	// retrieve data from db and compare with header info
 	url, actualToken, err := d.GetRow(key)
